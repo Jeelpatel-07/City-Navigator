@@ -137,44 +137,57 @@ const Contact = () => {
   ];
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    if (submitStatus) setSubmitStatus(null);
-  };
+  const { name, value } = e.target;
+  setFormData((prev) => ({
+    ...prev,
+    [name]: value,
+  }));
+
+  if (submitStatus) {
+    setSubmitStatus(null);
+  }
+};
+
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    // Basic validation
-    if (!formData.name.trim() || !formData.email.trim() || !formData.message.trim()) {
-      setSubmitStatus('error');
-      return;
+  e.preventDefault();
+
+  if (!formData.name.trim() || !formData.email.trim() || !formData.message.trim()) {
+    setSubmitStatus("error");
+    return;
+  }
+
+  setIsSubmitting(true);
+  setSubmitStatus(null);
+
+  try {
+    const res = await fetch("http://localhost:5000/api/contact", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(formData),
+    });
+
+    if (!res.ok) {
+      throw new Error("Failed to send message");
     }
 
-    setIsSubmitting(true);
-    setSubmitStatus(null);
+    setSubmitStatus("success");
+    setFormData({
+      name: "",
+      email: "",
+      message: "",
+    });
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setSubmitStatus('success');
-      
-      // Reset form
-      setFormData({
-        name: '',
-        email: '',
-        message: ''
-      });
-      
-      // Auto-clear success message
-      setTimeout(() => {
-        setSubmitStatus(null);
-      }, 5000);
-    }, 1500);
-  };
+  } catch (error) {
+    setSubmitStatus("error");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
+
 
   const toggleFaq = (index) => {
     setOpenFaqIndex(openFaqIndex === index ? null : index);
