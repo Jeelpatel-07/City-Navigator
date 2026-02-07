@@ -12,6 +12,7 @@ app.use(express.json());
 
 // API ROUTES
 app.use("/api/services", serviceRoutes);
+app.use("/api/contact", require("./routes/contact.routes"));
 app.use("/api/auth", authRoutes);
 app.use("/api/vendor", vendorRoutes);
 
