@@ -129,7 +129,7 @@ const Navbar = () => {
                 className="flex items-center text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 font-medium transition-colors"
               >
                 <FiBriefcase className="mr-2" />
-                Become Vendor
+                Join as Vendor
               </Link>
             )}
           </div>
