@@ -370,97 +370,46 @@ const rajkotServices = [
 
 export const serviceService = {
   getAllServices: async (filters = {}) => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        let filteredServices = [...rajkotServices]
-        
-        if (filters.category && filters.category !== 'all') {
-          filteredServices = filteredServices.filter(
-            service => service.category.toLowerCase() === filters.category.toLowerCase()
-          )
-        }
-        
-        if (filters.search) {
-          const searchTerm = filters.search.toLowerCase()
-          filteredServices = filteredServices.filter(
-            service => 
-              service.name.toLowerCase().includes(searchTerm) ||
-              service.description.toLowerCase().includes(searchTerm) ||
-              service.category.toLowerCase().includes(searchTerm)
-          )
-        }
-        
-        if (filters.area && filters.area !== 'all') {
-          filteredServices = filteredServices.filter(
-            service => service.area && service.area.toLowerCase().includes(filters.area.toLowerCase())
-          )
-        }
-        
-        if (filters.minRating) {
-          filteredServices = filteredServices.filter(
-            service => service.rating >= filters.minRating
-          )
-        }
-        
-        resolve({ 
-          services: filteredServices, 
-          total: filteredServices.length,
-          filters: filters 
-        })
-      }, 300) // Reduced delay for better UX
-    })
+    // Call backend API; backend returns an array of services
+    try {
+      const response = await api.get('/services', { params: filters })
+
+      // `api` interceptor returns response.data — backend returns array of service objects
+      const raw = Array.isArray(response) ? response : (response.services || [])
+
+      // Normalize each service to always include `id` (from _id if present)
+      const servicesArray = raw.map(s => ({ ...s, id: s._id || s.id }))
+
+      return {
+        services: servicesArray,
+        total: servicesArray.length,
+        filters
+      }
+    } catch (err) {
+      // Fallback to mock data on error
+      console.error('getAllServices API error, falling back to mock:', err)
+      return new Promise((resolve) => {
+        setTimeout(() => resolve({ services: rajkotServices, total: rajkotServices.length, filters }), 200)
+      })
+    }
   },
 
   getServiceById: async (id) => {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        // Try to find exact match
-        let service = rajkotServices.find(s => s.id === id)
-        
-        // If not found, try case-insensitive match
-        if (!service) {
-          service = rajkotServices.find(s => 
-            s.id.toLowerCase() === id.toLowerCase() || 
-            s.name.toLowerCase().includes(id.toLowerCase())
-          )
-        }
-        
-        // If still not found, try to find by numeric ID
-        if (!service && !isNaN(id)) {
-          const index = parseInt(id) - 1
-          if (index >= 0 && index < rajkotServices.length) {
-            service = rajkotServices[index]
-          }
-        }
-        
-        if (service) {
-          resolve(service)
-        } else {
-          // Return a default service instead of rejecting
-          resolve({
-            id: id,
-            name: 'Service Details',
-            category: 'general',
-            rating: 4.5,
-            location: 'Rajkot, Gujarat',
-            description: 'This service provides quality work with experienced professionals.',
-            price: 500,
-            features: ['Professional Service', 'Quality Work', 'Timely Completion', 'Customer Support'],
-            image: 'https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&w=800&q=80',
-            vendor: {
-              name: 'City Navigator Vendor',
-              rating: 4.5,
-              reviews: 100,
-              experience: '5 years',
-              contact: '+91-98765-43210'
-            },
-            timings: '9:00 AM - 7:00 PM',
-            area: 'Rajkot',
-            isVerified: true
-          })
-        }
-      }, 200) // Fast response for better UX
-    })
+    try {
+      const response = await api.get(`/services/${id}`)
+
+      // Backend returns the service object directly; some APIs may wrap it in { service }
+      const svc = response?.service || response
+
+      // Normalize to always include `id` as _id fallback
+      const normalized = { ...svc, id: svc?._id || svc?.id }
+      return normalized
+    } catch (err) {
+      console.error('getServiceById API error, falling back to mock:', err)
+      // Fallback: try to find in mock data
+      const service = rajkotServices.find(s => s.id === id || (s.name && s.name.toLowerCase().includes(String(id).toLowerCase())))
+      return service ? { ...service, id: service.id } : null
+    }
   },
 
   searchServices: async (query) => {

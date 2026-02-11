@@ -21,13 +21,18 @@ const ServiceDetails = () => {
     try {
       setLoading(true)
       const data = await serviceService.getServiceById(id)
-      setService(data)
-      
-      // Fetch related services (same category)
+
+      // Normalize id for backend (_id) or mock (id)
+      const normalized = { ...data, id: data?._id || data?.id }
+      setService(normalized)
+
+      // Fetch related services (same category) and normalize their ids
       const allServices = await serviceService.getAllServices()
-      const related = allServices.services
-        .filter(s => s.category === data.category && s.id !== data.id)
+      const all = allServices.services || []
+      const related = all
+        .filter(s => (s.category === normalized.category) && ((s._id || s.id) !== (normalized._id || normalized.id)))
         .slice(0, 3)
+        .map(s => ({ ...s, id: s._id || s.id }))
       setRelatedServices(related)
     } catch (error) {
       console.error('Error:', error)
@@ -99,9 +104,9 @@ const ServiceDetails = () => {
                       {service.name}
                     </h1>
                     <div className="flex items-center text-gray-600 dark:text-gray-400 mb-4">
-                      <FiMapPin className="mr-2 flex-shrink-0" />
-                      <span>{service.location}</span>
-                    </div>
+                          <FiMapPin className="mr-2 flex-shrink-0" />
+                          <span>{service.address || service.location || service.area || `${service.city || ''}${service.area ? ', ' + service.area : ''}`}</span>
+                        </div>
                   </div>
                   <div className="bg-blue-600 text-white px-6 py-3 rounded-xl mt-4 md:mt-0">
                     <div className="text-3xl font-bold">₹{service.price}</div>
@@ -234,7 +239,7 @@ const ServiceDetails = () => {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600 dark:text-gray-400">Service Area</span>
-                  <span className="font-medium">{service.location}</span>
+                  <span className="font-medium">{service.address || service.location || service.area || service.city}</span>
                 </div>
               </div>
             </div>

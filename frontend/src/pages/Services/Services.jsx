@@ -1,6 +1,7 @@
 // frontend/src/pages/Services/Services.jsx - BACKEND CONNECTED VERSION
 import { useState, useEffect } from 'react'
 import ServiceCard from '../../components/ServiceCard/ServiceCard.jsx'
+import ServicesSearch from '../../components/ServicesSearch/ServicesSearch.jsx'
 import Loader from '../../components/Common/Loader.jsx'
 import { FiFilter, FiSearch, FiMapPin, FiStar } from 'react-icons/fi'
 import { serviceService } from '../../services/api.js'
@@ -52,18 +53,35 @@ const Services = () => {
     try {
       setLoading(true)
 
-      const response = await serviceService.getServices()
+      // Use the frontend service which returns { services, total, filters }
+      const data = await serviceService.getAllServices()
+      const response = data.services || []
 
-      // Normalize backend data for frontend
+      // Normalize backend/mock data for frontend components
       const normalized = response.map(service => ({
-        id: service._id,
+        id: service._id || service.id || encodeURIComponent(service.name || ''),
         name: service.name,
-        category: service.category?.toLowerCase() || '',
+        category: (service.category || '').toLowerCase(),
         city: service.city,
         state: service.state,
         area: service.area || '',
+        // Provide address for ServiceCard (backend uses `address` for places)
+        address: service.address || service.location || service.area || 'Address not available',
+        openingHours: service.openingHours || service.timings || '',
+        priceRange: service.priceRange || service.price || '',
+        // Pass through features and extraDetails so ServiceCard can render them
+        features: service.features || [],
+        extraDetails: service.extraDetails || {},
+        // Contact and web fields so Action buttons render (call / website)
+        phone: service.phone || service.vendor?.contact || '',
+        website: service.website || '',
+        // serviceType: backend uses 'place' or 'local', normalize to expected values
+        serviceType: (service.serviceType || (['plumber','electrician','carpenter','ac-repair','ro-water-purifier-service','pest-control','car-repair','bike-vehicle-repair','pack-move','cleaning-services'].includes((service.category || '').toLowerCase()) ? 'local-service' : 'place')),
+        responseTime: service.responseTime || service.response || '',
+        verified: service.verified || service.isVerified || false,
+        ratingCount: service.ratingCount || service.vendor?.reviews || 0,
         rating: service.rating || 4,
-        price: service.price,
+        price: service.price || 0,
         description: service.description || '',
         image: service.image,
         vendor: service.vendor || null
@@ -130,71 +148,19 @@ const Services = () => {
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        {/* Filters */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 mb-8">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Search */}
-            <div className="lg:col-span-2 relative">
-              <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search services..."
-                className="w-full pl-12 pr-4 py-3 border rounded-lg"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-              />
-            </div>
-
-            {/* Category */}
-            <select
-              className="px-4 py-3 border rounded-lg"
-              value={selectedCategory}
-              onChange={e => setSelectedCategory(e.target.value)}
-            >
-              {categories.map(cat => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.icon} {cat.name}
-                </option>
-              ))}
-            </select>
-
-            {/* Area */}
-            <select
-              className="px-4 py-3 border rounded-lg"
-              value={selectedArea}
-              onChange={e => setSelectedArea(e.target.value)}
-            >
-              {areas.map(area => (
-                <option key={area} value={area}>
-                  {area}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Rating + Reset */}
-          <div className="mt-6 flex flex-wrap items-center gap-4">
-            {[0, 3, 4, 4.5].map(rating => (
-              <button
-                key={rating}
-                onClick={() => setMinRating(rating)}
-                className={`px-3 py-1 rounded ${
-                  minRating === rating ? 'bg-blue-500 text-white' : 'bg-gray-200'
-                }`}
-              >
-                {rating === 0 ? 'Any' : rating}+ ⭐
-              </button>
-            ))}
-
-            <span className="ml-auto text-gray-600">
-              Showing {filteredServices.length} of {services.length}
-            </span>
-
-            <button onClick={handleResetFilters} className="text-blue-600">
-              Reset
-            </button>
-          </div>
-        </div>
+        <ServicesSearch
+          categories={categories}
+          areas={areas}
+          initial={{ category: selectedCategory, area: selectedArea, minRating }}
+          onChange={({ keyword, category, area, minRating, serviceType }) => {
+            setSearchQuery(keyword || '')
+            setSelectedCategory(category || 'all')
+            setSelectedArea(area || 'all')
+            setMinRating(minRating || 0)
+            // if serviceType is used later to filter by vendor/place, store it
+            // (we can add state and use it in filtering)
+          }}
+        />
 
         {/* Grid */}
         {loading ? (

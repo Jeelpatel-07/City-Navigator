@@ -24,6 +24,7 @@ const ServiceCard = ({ service }) => {
   // Safely access properties with fallbacks
   const {
     _id = '',
+    id: fallbackId = '',
     name = 'Unnamed Service',
     category = 'unknown',
     image = 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=800&q=80',
@@ -44,6 +45,10 @@ const ServiceCard = ({ service }) => {
     features = [],
     extraDetails = {}
   } = service;
+
+  // Prefer backend `_id` but fall back to `id` (mock/normalized) or service name
+  // Encode the name for safe URL usage; Express will decode params for server lookup
+  const serviceId = _id || fallbackId || encodeURIComponent(name || '')
 
   // Determine if it's a local service (vendor)
   const isLocalService = serviceType === 'local-service' || [
@@ -93,56 +98,59 @@ const ServiceCard = ({ service }) => {
     'religious-tourist-places': 'Religious Place'
   };
 
-  // Get category icon and name
   const categoryIcon = categoryIcons[category] || '📍';
-  const categoryName = categoryNames[category] || 
-    category.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
-
-  // Calculate display price
-  const displayPrice = price || priceRange || 'Contact for Price';
-
-  // Format rating
-  const formatRating = (rating) => {
-    return typeof rating === 'number' ? rating.toFixed(1) : '4.0';
-  };
-
-  // Render stars
-  const renderStars = () => {
-    const numericRating = typeof rating === 'number' ? rating : 4.0;
-    const stars = [];
-    
-    for (let i = 1; i <= 5; i++) {
-      if (i <= Math.floor(numericRating)) {
-        stars.push(<FiStar key={i} className="text-yellow-400 fill-yellow-400" size={14} />);
-      } else if (i === Math.ceil(numericRating) && numericRating % 1 >= 0.5) {
-        stars.push(<FiStar key={i} className="text-yellow-400 fill-yellow-400" size={14} />);
-      } else {
-        stars.push(<FiStar key={i} className="text-gray-300 dark:text-gray-600" size={14} />);
-      }
-    }
-    return stars;
-  };
+  const categoryName = categoryNames[category] || category;
 
   // Handle image error
-  const handleImageError = () => {
-    setImageError(true);
-  };
-
-  // Handle favorite click
+  const handleImageError = () => setImageError(true);
+  
+  // Handle favorite toggle
   const handleFavoriteClick = (e) => {
     e.preventDefault();
-    e.stopPropagation();
     setIsFavorite(!isFavorite);
   };
 
-  // Get features to display
+  // Determine price display
+  const displayPrice = priceRange || price || 'Contact for Price';
+
+  // Rating display (max 5 stars, min 0)
+  const displayRating = Math.min(5, Math.max(0, rating || 4.0));
+
+  // Format rating for display (show one decimal)
+  const formatRating = (rate) => {
+    const parsed = parseFloat(rate);
+    return isNaN(parsed) ? '4.0' : parsed.toFixed(1);
+  };
+
+  // Render star component
+  const renderStars = () => {
+    return [1, 2, 3, 4, 5].map((star) => (
+      <FiStar
+        key={star}
+        size={14}
+        className={star <= Math.floor(displayRating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}
+      />
+    ));
+  };
+
+  // Get display features (max 3)
   const getDisplayFeatures = () => {
-    if (features && features.length > 0) return features.slice(0, 3);
-    if (extraDetails.services && extraDetails.services.length > 0) 
-      return extraDetails.services.slice(0, 3);
-    if (extraDetails.facilities && extraDetails.facilities.length > 0) 
-      return extraDetails.facilities.slice(0, 3);
-    return [];
+    const featuresToShow = [];
+    
+    // Add features array items
+    if (Array.isArray(features)) {
+      featuresToShow.push(...features.slice(0, 3));
+    }
+    
+    // Add extra details facilities/amenities
+    if (extraDetails?.facilities?.[0]) {
+      featuresToShow.push(extraDetails.facilities[0]);
+    }
+    if (extraDetails?.amenities?.[0]) {
+      featuresToShow.push(extraDetails.amenities[0]);
+    }
+    
+    return featuresToShow.slice(0, 3);
   };
 
   // Check if emergency service is available
@@ -151,7 +159,7 @@ const ServiceCard = ({ service }) => {
   // LOCAL SERVICE CARD (With Book Now)
   if (isLocalService) {
     return (
-      <div className="group bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-200 dark:border-gray-700 hover:-translate-y-1">
+      <div className="service-card group bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 dark:border-gray-700 hover:-translate-y-1 service-card-animate">
         {/* Card Header */}
         <div className="relative h-48 overflow-hidden">
           {/* Image with fallback */}
@@ -189,10 +197,10 @@ const ServiceCard = ({ service }) => {
           {/* Favorite Button */}
           <button 
             onClick={handleFavoriteClick}
-            className="absolute top-3 right-3 bg-white/20 backdrop-blur-sm w-9 h-9 rounded-full flex items-center justify-center hover:bg-white/30 transition-all hover:scale-110"
+            className="absolute top-3 right-3 bg-white/90 dark:bg-gray-900 w-10 h-10 rounded-lg flex items-center justify-center hover:scale-105 transition-all favorite-active"
             aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
           >
-            <FiHeart className={`${isFavorite ? 'fill-red-500 text-red-500' : 'text-white'}`} size={18} />
+            <FiHeart className={`${isFavorite ? 'fill-red-600 text-red-600' : 'text-gray-600'}`} size={18} />
           </button>
           
           {/* Emergency Badge */}
@@ -204,7 +212,7 @@ const ServiceCard = ({ service }) => {
           )}
           
           {/* Price Badge */}
-          <div className="absolute bottom-3 right-3 bg-white/95 backdrop-blur-sm text-gray-800 px-4 py-2 rounded-xl font-bold text-lg shadow-lg border border-white/30">
+          <div className="absolute bottom-3 right-3 bg-white/95 dark:bg-gray-900 text-gray-800 dark:text-gray-100 px-3 py-1 rounded-full font-bold text-sm shadow">
             {displayPrice}
           </div>
         </div>
@@ -282,25 +290,33 @@ const ServiceCard = ({ service }) => {
           )}
 
           {/* Action Buttons */}
-          <div className="flex gap-2">
-            <button className="flex-1 bg-gradient-to-r from-blue-600 to-blue-800 text-white py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-900 transition-all duration-300 flex items-center justify-center gap-2 shadow-md hover:shadow-lg">
+          <div className="flex gap-3 items-center service-card-actions">
+            <button className="flex-1 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white py-3 rounded-xl font-semibold hover:from-indigo-700 hover:to-indigo-800 transition-all duration-300 flex items-center justify-center gap-2 shadow-md">
               <FiCalendar size={16} />
               Book Now
             </button>
+
             <a 
               href={`tel:${phone}`}
-              className="w-12 flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              className="w-12 h-12 flex items-center justify-center bg-white border border-gray-200 text-indigo-600 rounded-lg hover:bg-gray-50 transition-colors"
               aria-label={`Call ${name}`}
             >
               <FiPhone size={18} />
             </a>
-            <Link 
-              to={`/services/${_id}`}
-              className="w-12 flex items-center justify-center border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-              aria-label={`View details of ${name}`}
-            >
-              <FiExternalLink size={18} />
-            </Link>
+
+            {website ? (
+              <a href={website} target="_blank" rel="noopener noreferrer" className="w-12 h-12 flex items-center justify-center bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors" aria-label={`Visit website of ${name}`}>
+                <FiExternalLink size={18} />
+              </a>
+            ) : (
+              <Link 
+                to={`/services/${serviceId}`}
+                className="w-12 h-12 flex items-center justify-center border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                aria-label={`View details of ${name}`}
+              >
+                <FiExternalLink size={18} />
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -309,7 +325,7 @@ const ServiceCard = ({ service }) => {
 
   // PLACE CARD (Without Book Now)
   return (
-    <div className="group bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-200 dark:border-gray-700 hover:-translate-y-1">
+    <div className="service-card group bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 dark:border-gray-700 hover:-translate-y-1 service-card-animate">
       {/* Card Header */}
       <div className="relative h-48 overflow-hidden">
         {/* Image with fallback */}
@@ -346,14 +362,14 @@ const ServiceCard = ({ service }) => {
         {/* Favorite Button */}
         <button 
           onClick={handleFavoriteClick}
-          className="absolute top-3 right-3 bg-white/20 backdrop-blur-sm w-9 h-9 rounded-full flex items-center justify-center hover:bg-white/30 transition-all hover:scale-110"
+          className="absolute top-3 right-3 bg-white/90 dark:bg-gray-900 w-10 h-10 rounded-lg flex items-center justify-center hover:scale-105 transition-all favorite-active"
           aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
         >
-          <FiHeart className={`${isFavorite ? 'fill-red-500 text-red-500' : 'text-white'}`} size={18} />
+          <FiHeart className={`${isFavorite ? 'fill-red-600 text-red-600' : 'text-gray-600'}`} size={18} />
         </button>
         
         {/* Rating Badge */}
-        <div className="absolute bottom-3 left-3 bg-white/95 backdrop-blur-sm px-4 py-2.5 rounded-xl shadow-lg border border-white/30">
+        <div className="absolute bottom-3 left-3 bg-white/95 dark:bg-gray-900 px-4 py-2.5 rounded-xl shadow-lg border border-white/30">
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-0.5">
               {renderStars()}
@@ -417,7 +433,7 @@ const ServiceCard = ({ service }) => {
               {getDisplayFeatures().map((item, idx) => (
                 <span 
                   key={idx}
-                  className="px-2.5 py-1.5 bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-lg text-xs font-medium"
+                  className="px-2.5 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg text-xs font-medium"
                 >
                   {item}
                 </span>
@@ -427,17 +443,17 @@ const ServiceCard = ({ service }) => {
         )}
 
         {/* Action Buttons */}
-        <div className="flex gap-2">
+        <div className="flex gap-3 items-center service-card-actions">
           <Link 
-            to={`/services/${_id}`}
-            className="flex-1 border-2 border-purple-600 text-purple-600 dark:border-purple-500 dark:text-purple-500 py-3 rounded-lg font-semibold hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors flex items-center justify-center gap-2"
+            to={`/services/${serviceId}`}
+            className="flex-1 border-2 border-indigo-600 text-indigo-600 dark:border-indigo-500 dark:text-indigo-400 py-3 rounded-xl font-semibold hover:bg-indigo-50 transition-colors flex items-center justify-center gap-2"
           >
             <FiExternalLink size={16} />
             View Details
           </Link>
           <a 
             href={`tel:${phone}`}
-            className="w-12 flex items-center justify-center bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-colors"
+            className="w-12 h-12 flex items-center justify-center bg-white border border-gray-200 text-indigo-600 rounded-lg hover:bg-gray-50 transition-colors"
             aria-label={`Call ${name}`}
           >
             <FiPhone size={18} />
@@ -447,7 +463,7 @@ const ServiceCard = ({ service }) => {
               href={website}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-12 flex items-center justify-center border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              className="w-12 h-12 flex items-center justify-center border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               aria-label={`Visit website of ${name}`}
             >
               <FiExternalLink size={18} />

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import SearchBar from '../../components/SearchBar/SearchBar.jsx'
+// Search bar removed from Home page per request
 import CategoryTabs from '../../components/CategoryTabs/CategoryTabs.jsx'
 import ServiceCard from '../../components/ServiceCard/ServiceCard.jsx'
 import Loader from '../../components/Common/Loader.jsx'
@@ -45,7 +45,7 @@ const Home = () => {
         
         // Transform serviceService data to match ServiceCard structure
         const transformedServices = services.map(service => ({
-          _id: service.id,
+        _id: service.id || encodeURIComponent(service.name || ''),
           serviceType: ['plumber', 'electrician', 'painter', 'cleaning', 'mechanic'].includes(service.category) 
             ? 'local-service' 
             : 'place',
@@ -135,42 +135,12 @@ const Home = () => {
                 <span>Explore All Services</span>
                 <FiArrowRight className="ml-3 group-hover:translate-x-1 transition-transform" />
               </Link>
-              <button
-                onClick={() =>
-                  document
-                    .getElementById('search-section')
-                    .scrollIntoView({ behavior: 'smooth' })
-                }
-                className="inline-flex items-center justify-center px-8 py-4 text-lg font-medium rounded-xl bg-white/10 text-white border border-white/30 hover:bg-white/20 transition-all duration-300 hover:scale-105"
-              >
-                <FiChevronDown className="mr-3" />
-                Search Your Area
-              </button>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ==================== SEARCH SECTION ==================== */}
-      <section id="search-section" className="py-20 bg-white dark:bg-gray-800">
-        <div className="container mx-auto px-4">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold mb-3 dark:text-white">
-                Find Services in Rajkot
-              </h2>
-              <p className="text-gray-600 dark:text-gray-400">
-                Search for general places or local vendor services across the city
-              </p>
-            </div>
-            
-            {/* Professional Search Bar */}
-            <div className="bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-800 dark:to-gray-900 rounded-3xl shadow-xl p-8 md:p-12 border border-gray-200 dark:border-gray-700">
-              <SearchBar />
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Search section removed from Home page */}
 
       {/* ==================== BROWSE CATEGORIES ==================== */}
       <section className="py-20 bg-gray-50 dark:bg-gray-900">
