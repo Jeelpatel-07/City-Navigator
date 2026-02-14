@@ -13,6 +13,7 @@ import VendorJoin from './pages/Vendor/VendorJoin.jsx'
 import Profile from './pages/Profile/Profile.jsx'
 import Login from './pages/Auth/Login.jsx'
 import Register from './pages/Auth/Register.jsx'
+import ChangePassword from './pages/Auth/ChangePassword.jsx'
 import About from './pages/About/About.jsx'
 import Contact from './pages/Contact/Contact.jsx'
 import NotFound from './pages/NotFound/NotFound.jsx'
@@ -80,6 +81,15 @@ function App() {
               <PublicOnlyRoute>
                 <Register />
               </PublicOnlyRoute>
+            }
+          />
+
+          <Route
+            path="/change-password"
+            element={
+              <ProtectedRoute>
+                <ChangePassword />
+              </ProtectedRoute>
             }
           />
 

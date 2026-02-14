@@ -129,7 +129,7 @@ exports.loginVendor = async (req, res) => {
 
     // 3️⃣ Generate token
     const token = jwt.sign(
-      { id: vendor._id, role: "VENDOR" },
+      { userId: vendor._id, role: "VENDOR" },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
@@ -157,12 +157,12 @@ exports.loginVendor = async (req, res) => {
 // =======================
 exports.changeVendorPassword = async (req, res) => {
   try {
-    const { currentPassword, newPassword } = req.body;
+    const { currentPassword, newPassword, confirmPassword } = req.body;
 
     // 1️⃣ Validation
-    if (!currentPassword || !newPassword) {
+    if (!currentPassword || !newPassword || !confirmPassword) {
       return res.status(400).json({
-        message: "Both current and new password are required"
+        message: "All fields are required"
       });
     }
 
@@ -172,8 +172,20 @@ exports.changeVendorPassword = async (req, res) => {
       });
     }
 
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        message: "Passwords do not match"
+      });
+    }
+
+    if (currentPassword === newPassword) {
+      return res.status(400).json({
+        message: "New password cannot be the same as current password"
+      });
+    }
+
     // 2️⃣ Get vendor from token
-    const vendor = await Vendor.findById(req.user.id);
+    const vendor = await Vendor.findById(req.user.userId);
     if (!vendor) {
       return res.status(404).json({
         message: "Vendor not found"
@@ -197,9 +209,25 @@ exports.changeVendorPassword = async (req, res) => {
     vendor.password = hashedPassword;
     await vendor.save();
 
-    // 5️⃣ Success
+    // 5️⃣ Send confirmation email
+    await sendEmail(
+      vendor.email,
+      "🔐 Password Changed Successfully",
+      `
+        <h2>Hello ${vendor.fullName} 👋</h2>
+
+        <p>Your password has been successfully changed.</p>
+
+        <p>If you did not make this change, please contact support immediately.</p>
+
+        <br/>
+        <p><b>City Navigator Team</b></p>
+      `
+    );
+
+    // 6️⃣ Success
     res.json({
-      message: "Password changed successfully"
+      message: "Password changed successfully. Confirmation email sent."
     });
 
   } catch (error) {

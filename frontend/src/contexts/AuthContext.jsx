@@ -92,6 +92,14 @@ export const AuthProvider = ({ children }) => {
   }
 };
 
+  const changePassword = async (currentPassword, newPassword, confirmPassword) => {
+    try {
+      await authService.changePassword(currentPassword, newPassword, confirmPassword);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  };
 
   const logout = () => {
     localStorage.removeItem('token');
@@ -108,6 +116,7 @@ export const AuthProvider = ({ children }) => {
       logout, 
       registerUser,
       registerVendor,
+      changePassword,
       loading 
     }}>
       {children}

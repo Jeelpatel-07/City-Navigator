@@ -15,7 +15,8 @@ import {
   FiInfo,
   FiMail,
   FiBriefcase,
-  FiHeart
+  FiHeart,
+  FiLock
 } from 'react-icons/fi'
 import logo from '../../assets/images/logo.png'
 import './Navbar.css'
@@ -236,6 +237,17 @@ const Navbar = () => {
                         </>
                       )}
                       
+                      <div className="border-t border-gray-200 dark:border-gray-700 my-2"></div>
+                      
+                      <Link
+                        to="/change-password"
+                        className="flex items-center px-5 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        onClick={() => setIsProfileMenuOpen(false)}
+                      >
+                        <FiLock className="mr-3 text-blue-500" />
+                        Change Password
+                      </Link>
+
                       <div className="border-t border-gray-200 dark:border-gray-700 my-2"></div>
                       
                       <button

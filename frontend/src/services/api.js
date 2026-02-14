@@ -539,6 +539,15 @@ export const serviceService = {
   logout: async () => {
     localStorage.removeItem('token')
     return { success: true }
+  },
+
+  changePassword: async (currentPassword, newPassword, confirmPassword) => {
+    const data = await api.post('/auth/change-password', {
+      currentPassword,
+      newPassword,
+      confirmPassword
+    })
+    return data; // { message }
   }
 }
 
@@ -603,10 +612,11 @@ export const vendorService = {
       }, 500)
     })
   },
-  changePassword: async (currentPassword, newPassword) => {
+  changePassword: async (currentPassword, newPassword, confirmPassword) => {
   return api.put("/vendor/change-password", {
     currentPassword,
-    newPassword
+    newPassword,
+    confirmPassword
   });
 },
 

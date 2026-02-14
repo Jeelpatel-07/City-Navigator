@@ -181,3 +181,83 @@ exports.getCurrentUser = async (req, res) => {
     res.status(500).json({ message: "Failed to get user" });
   }
 };
+
+// ======================
+// CHANGE PASSWORD
+// ======================
+exports.changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+
+    // 1. Validation
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({
+        message: "All fields are required"
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        message: "New password must be at least 6 characters"
+      });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        message: "New passwords do not match"
+      });
+    }
+
+    if (currentPassword === newPassword) {
+      return res.status(400).json({
+        message: "New password cannot be the same as current password"
+      });
+    }
+
+    // 2. Get user
+    const user = await User.findById(req.user.userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // 3. Verify current password
+    const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isPasswordValid) {
+      return res.status(400).json({
+        message: "Current password is incorrect"
+      });
+    }
+
+    // 4. Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // 5. Update password
+    user.password = hashedPassword;
+    await user.save();
+
+    // 6. Send confirmation email
+    await sendEmail(
+      user.email,
+      "🔐 Password Changed Successfully",
+      `
+        <h2>Hello ${user.fullName} 👋</h2>
+
+        <p>Your password has been successfully changed.</p>
+
+        <p>If you did not make this change, please contact support immediately.</p>
+
+        <br/>
+        <p><b>City Navigator Team</b></p>
+      `
+    );
+
+    res.status(200).json({
+      message: "Password changed successfully. Confirmation email sent."
+    });
+  } catch (error) {
+    console.error("Change Password Error:", error);
+    res.status(500).json({
+      message: "Failed to change password"
+    });
+  }
+};
