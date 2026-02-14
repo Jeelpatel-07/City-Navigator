@@ -14,7 +14,8 @@ import {
   FiGrid,
   FiInfo,
   FiMail,
-  FiBriefcase
+  FiBriefcase,
+  FiHeart
 } from 'react-icons/fi'
 import logo from '../../assets/images/logo.png'
 import './Navbar.css'
@@ -225,11 +226,11 @@ const Navbar = () => {
                             My Bookings
                           </Link>
                           <Link
-                            to="/favorites"
+                            to="/saved-services"
                             className="flex items-center px-5 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                             onClick={() => setIsProfileMenuOpen(false)}
                           >
-                            <FiShoppingBag className="mr-3 text-gray-500" />
+                            <FiHeart className="mr-3 text-red-500" />
                             Saved Services
                           </Link>
                         </>
@@ -375,11 +376,11 @@ const Navbar = () => {
                           My Bookings
                         </Link>
                         <Link
-                          to="/favorites"
-                          className="flex items-center py-3 px-4 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                          to="/saved-services"
+                          className="flex items-center py-3 px-4 text-gray-700 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
                           onClick={() => setIsMenuOpen(false)}
                         >
-                          <FiShoppingBag className="mr-3" />
+                          <FiHeart className="mr-3 text-red-500" />
                           Saved Services
                         </Link>
                       </>

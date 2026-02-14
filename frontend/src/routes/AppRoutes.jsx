@@ -6,6 +6,7 @@ import Footer from '../components/Footer/Footer.jsx'
 import Home from '../pages/Home/Home.jsx'
 import Services from '../pages/Services/Services.jsx'
 import ServiceDetails from '../pages/ServiceDetails/ServiceDetails.jsx'
+import SavedServices from '../pages/SavedServices/SavedServices.jsx'
 import VendorDashboard from '../pages/Vendor/VendorDashboard.jsx'
 import VendorJoin from '../pages/Vendor/VendorJoin.jsx' // Add this
 import Login from '../pages/Auth/Login.jsx'
@@ -24,6 +25,7 @@ function AppRoutes() {
             <Route path="/" element={<Home />} />
             <Route path="/services" element={<Services />} />
             <Route path="/services/:id" element={<ServiceDetails />} />
+            <Route path="/saved-services" element={<SavedServices />} />
             <Route path="/vendor" element={<VendorDashboard />} />
             <Route path="/vendor/join" element={<VendorJoin />} /> {/* Add this */}
             <Route path="/login" element={<Login />} />

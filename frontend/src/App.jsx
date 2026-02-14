@@ -7,6 +7,7 @@ import Footer from './components/Footer/Footer.jsx'
 import Home from './pages/Home/Home.jsx'
 import Services from './pages/Services/Services.jsx'
 import ServiceDetails from './pages/ServiceDetails/ServiceDetails.jsx'
+import SavedServices from './pages/SavedServices/SavedServices.jsx'
 import VendorDashboard from './pages/Vendor/VendorDashboard.jsx'
 import VendorJoin from './pages/Vendor/VendorJoin.jsx'
 import Profile from './pages/Profile/Profile.jsx'
@@ -87,6 +88,15 @@ function App() {
             element={
               <ProtectedRoute>
                 <Profile />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/saved-services"
+            element={
+              <ProtectedRoute>
+                <SavedServices />
               </ProtectedRoute>
             }
           />
