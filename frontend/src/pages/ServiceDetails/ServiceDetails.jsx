@@ -1,17 +1,23 @@
 // Replace the entire ServiceDetails.jsx with this:
 
 import { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { FiStar, FiMapPin, FiClock, FiCheckCircle, FiPhone, FiArrowLeft } from 'react-icons/fi'
+import { useParams, Link, useNavigate } from 'react-router-dom'
+import { FiStar, FiMapPin, FiClock, FiCheckCircle, FiPhone, FiArrowLeft, FiHeart } from 'react-icons/fi'
 import Loader from '../../components/Common/Loader.jsx'
 import Button from '../../components/Common/Button.jsx'
 import { serviceService } from '../../services/api.js'
+import { useAuth } from '../../contexts/AuthContext.jsx'
 
 const ServiceDetails = () => {
   const { id } = useParams()
+  const navigate = useNavigate()
+  const { user } = useAuth()
   const [service, setService] = useState(null)
   const [loading, setLoading] = useState(true)
   const [relatedServices, setRelatedServices] = useState([])
+  const [error, setError] = useState(null)
+  const [isSaved, setIsSaved] = useState(false)
+  const [savingService, setSavingService] = useState(false)
 
   useEffect(() => {
     fetchService()
@@ -20,11 +26,32 @@ const ServiceDetails = () => {
   const fetchService = async () => {
     try {
       setLoading(true)
+      setError(null)
+      
+      console.log('Fetching service with ID:', id)
       const data = await serviceService.getServiceById(id)
+      
+      console.log('Service data received:', data)
+
+      if (!data) {
+        setError('Service not found')
+        setService(null)
+        setLoading(false)
+        return
+      }
 
       // Normalize id for backend (_id) or mock (id)
-      const normalized = { ...data, id: data?._id || data?.id }
+      const normalized = { 
+        ...data, 
+        id: data?._id || data?.id,
+        vendor: data?.vendor || { name: 'Unknown Vendor', rating: 4.5, reviews: 0 }
+      }
       setService(normalized)
+
+      // Check if service is already saved
+      if (user) {
+        checkIfServiceSaved(normalized._id || normalized.id)
+      }
 
       // Fetch related services (same category) and normalize their ids
       const allServices = await serviceService.getAllServices()
@@ -35,21 +62,67 @@ const ServiceDetails = () => {
         .map(s => ({ ...s, id: s._id || s.id }))
       setRelatedServices(related)
     } catch (error) {
-      console.error('Error:', error)
-      alert('Failed to load service details')
+      console.error('Error fetching service:', error)
+      setError(error.message || 'Failed to load service details')
     } finally {
       setLoading(false)
     }
   }
 
+  const checkIfServiceSaved = async (serviceId) => {
+    try {
+      const result = await serviceService.checkIfSaved(serviceId)
+      setIsSaved(result.isSaved || false)
+    } catch (error) {
+      console.error('Error checking saved status:', error)
+    }
+  }
+
+  const handleSaveService = async () => {
+    // Check if user is logged in
+    if (!user) {
+      navigate('/login', { state: { from: `/services/${id}` } })
+      return
+    }
+
+    setSavingService(true)
+    try {
+      const serviceId = service._id || service.id
+      
+      if (isSaved) {
+        // Unsave the service
+        await serviceService.unsaveService(serviceId)
+        setIsSaved(false)
+      } else {
+        // Save the service
+        await serviceService.saveService(serviceId)
+        setIsSaved(true)
+      }
+    } catch (error) {
+      console.error('Error saving/unsaving service:', error)
+      alert('Failed to save service. Please try again.')
+    } finally {
+      setSavingService(false)
+    }
+  }
+
   if (loading) return <Loader />
 
-  if (!service) return (
-    <div className="container mx-auto px-4 py-12 text-center">
-      <h2 className="text-2xl text-gray-600 dark:text-gray-400">Service not found</h2>
-      <Link to="/services" className="text-blue-600 hover:text-blue-800 mt-4 inline-block">
-        ← Back to Services
-      </Link>
+  if (error || !service) return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="container mx-auto px-4 py-12 text-center">
+        <div className="text-6xl mb-4">😕</div>
+        <h2 className="text-3xl font-bold text-gray-800 dark:text-white mb-4">
+          {error || 'Service not found'}
+        </h2>
+        <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-md mx-auto">
+          We couldn't find the service you're looking for. Please go back and try again.
+        </p>
+        <Link to="/services" className="inline-flex items-center gap-2 bg-blue-600 text-white px-8 py-3 rounded-xl hover:bg-blue-700 font-semibold transition-colors">
+          <FiArrowLeft />
+          Back to Services
+        </Link>
+      </div>
     </div>
   )
 
@@ -109,8 +182,12 @@ const ServiceDetails = () => {
                         </div>
                   </div>
                   <div className="bg-blue-600 text-white px-6 py-3 rounded-xl mt-4 md:mt-0">
-                    <div className="text-3xl font-bold">₹{service.price}</div>
-                    <div className="text-sm opacity-90">Starting Price</div>
+                    <div className="text-3xl font-bold">
+                      {service.priceRange || service.price ? `${service.priceRange || `₹${service.price}`}` : 'Contact for Price'}
+                    </div>
+                    <div className="text-sm opacity-90">
+                      {service.priceRange || service.price ? 'Price' : 'Custom Quote'}
+                    </div>
                   </div>
                 </div>
 
@@ -119,7 +196,7 @@ const ServiceDetails = () => {
                     Description
                   </h3>
                   <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                    {service.description}
+                    {service.description || 'No description available for this service. Please contact the vendor for more information.'}
                   </p>
                 </div>
 
@@ -127,14 +204,18 @@ const ServiceDetails = () => {
                   <h3 className="text-xl font-bold mb-4 text-gray-800 dark:text-white">
                     Features & Services
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {service.features?.map((feature, index) => (
-                      <div key={index} className="flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        <FiCheckCircle className="text-green-500 mr-3 flex-shrink-0" />
-                        <span className="text-gray-700 dark:text-gray-300">{feature}</span>
-                      </div>
-                    ))}
-                  </div>
+                  {service.features && service.features.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {service.features.map((feature, index) => (
+                        <div key={index} className="flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                          <FiCheckCircle className="text-green-500 mr-3 flex-shrink-0" />
+                          <span className="text-gray-700 dark:text-gray-300">{feature}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-gray-600 dark:text-gray-400">No features listed for this service.</div>
+                  )}
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-4">
@@ -142,9 +223,18 @@ const ServiceDetails = () => {
                     <FiPhone className="inline mr-2" />
                     Book Now
                   </Button>
-                  <Button variant="outline" className="flex-1 py-4 text-lg">
-                    Save for Later
-                  </Button>
+                  <button
+                    onClick={handleSaveService}
+                    disabled={savingService}
+                    className={`flex-1 py-4 text-lg px-6 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${
+                      isSaved
+                        ? 'bg-red-500 hover:bg-red-600 text-white'
+                        : 'bg-gray-200 hover:bg-gray-300 text-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white'
+                    } ${savingService ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    <FiHeart size={20} className={isSaved ? 'fill-current' : ''} />
+                    {savingService ? 'Saving...' : isSaved ? 'Saved' : 'Save for Later'}
+                  </button>
                 </div>
               </div>
             </div>

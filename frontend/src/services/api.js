@@ -407,8 +407,17 @@ export const serviceService = {
     } catch (err) {
       console.error('getServiceById API error, falling back to mock:', err)
       // Fallback: try to find in mock data
-      const service = rajkotServices.find(s => s.id === id || (s.name && s.name.toLowerCase().includes(String(id).toLowerCase())))
-      return service ? { ...service, id: service.id } : null
+      // Decode URI component in case ID is URL-encoded
+      const decodedId = decodeURIComponent(String(id))
+      
+      const service = rajkotServices.find(s => 
+        s.id === id || 
+        s.id === decodedId ||
+        (s.name && s.name.toLowerCase() === decodedId.toLowerCase()) ||
+        (s.name && s.name.toLowerCase().includes(decodedId.toLowerCase()))
+      )
+      
+      return service ? { ...service, id: service.id, _id: service.id } : null
     }
   },
 
@@ -448,6 +457,63 @@ export const serviceService = {
         resolve(featured)
       }, 300)
     })
+  },
+
+  saveService: async (serviceId) => {
+    try {
+      const response = await api.post(`/services/${serviceId}/save`)
+      return response
+    } catch (err) {
+      console.error('Save service error:', err)
+      // Fallback: save to localStorage
+      const saved = JSON.parse(localStorage.getItem('savedServices') || '[]')
+      if (!saved.includes(serviceId)) {
+        saved.push(serviceId)
+        localStorage.setItem('savedServices', JSON.stringify(saved))
+      }
+      return { success: true, message: 'Service saved' }
+    }
+  },
+
+  unsaveService: async (serviceId) => {
+    try {
+      const response = await api.delete(`/services/${serviceId}/save`)
+      return response
+    } catch (err) {
+      console.error('Unsave service error:', err)
+      // Fallback: remove from localStorage
+      const saved = JSON.parse(localStorage.getItem('savedServices') || '[]')
+      const filtered = saved.filter(id => id !== serviceId)
+      localStorage.setItem('savedServices', JSON.stringify(filtered))
+      return { success: true, message: 'Service removed' }
+    }
+  },
+
+  getSavedServices: async () => {
+    try {
+      const response = await api.get('/services/saved')
+      return response
+    } catch (err) {
+      console.error('Get saved services error:', err)
+      // Fallback: get from localStorage
+      const saved = JSON.parse(localStorage.getItem('savedServices') || '[]')
+      const savedServices = saved.map(id => {
+        const svc = rajkotServices.find(s => s.id === id)
+        return svc || { id, name: 'Service', category: 'unknown' }
+      }).filter(s => s)
+      return { services: savedServices }
+    }
+  },
+
+  checkIfSaved: async (serviceId) => {
+    try {
+      const response = await api.get(`/services/${serviceId}/is-saved`)
+      return response
+    } catch (err) {
+      // Fallback: check localStorage
+      const saved = JSON.parse(localStorage.getItem('savedServices') || '[]')
+      return { isSaved: saved.includes(serviceId) }
+    }
   }
 }
 
