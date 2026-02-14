@@ -11,6 +11,7 @@ import VendorDashboard from '../pages/Vendor/VendorDashboard.jsx'
 import VendorJoin from '../pages/Vendor/VendorJoin.jsx' // Add this
 import Login from '../pages/Auth/Login.jsx'
 import Register from '../pages/Auth/Register.jsx'
+import ChangePassword from '../pages/Auth/ChangePassword.jsx'
 import About from '../pages/About/About.jsx'
 import Contact from '../pages/Contact/Contact.jsx'
 import NotFound from '../pages/NotFound/NotFound.jsx'
@@ -30,6 +31,7 @@ function AppRoutes() {
             <Route path="/vendor/join" element={<VendorJoin />} /> {/* Add this */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/change-password" element={<ChangePassword />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="*" element={<NotFound />} />

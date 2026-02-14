@@ -517,9 +517,9 @@ const Profile = () => {
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
                           <span className="text-sm text-gray-600 dark:text-gray-400">Password</span>
-                          <button className="text-blue-600 hover:text-blue-500 text-sm font-medium">
+                          <Link to="/change-password" className="text-blue-600 hover:text-blue-500 text-sm font-medium">
                             Change
-                          </button>
+                          </Link>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-sm text-gray-600 dark:text-gray-400">Two-factor Auth</span>
